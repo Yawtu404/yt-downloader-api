@@ -33,6 +33,7 @@ def download_video(url: str):
         'nocheckcertificate': True,
         'geo_bypass': True,
         'quiet': False,
+        'cookiefile': 'cookies.txt',
     }
 
     try:
