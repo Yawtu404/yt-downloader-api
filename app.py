@@ -23,42 +23,42 @@ def read_root():
 def download_audio(url: str):
     save_dir = "/tmp"
     file_id = str(uuid.uuid4())
-    # 出力テンプレート：拡張子は後で指定
     outtmpl = f"{save_dir}/{file_id}.%(ext)s"
 
-    # musicplayerbot.py の設定をベースに MP3 出力用にカスタマイズ
     ydl_opts = {
-        'format': 'bestaudio/best',  # 最高の音声品質を選択
+        # 修正：最初から m4a (軽量) を指定して変換負荷を下げる
+        'format': 'bestaudio[ext=m4a]/bestaudio/best',
         'outtmpl': outtmpl,
         'noplaylist': True,
         'nocheckcertificate': True,
         'geo_bypass': True,
         'quiet': False,
         'cookiefile': 'cookies.txt',
-        # MP3 に変換するためのポストプロセッサ設定
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192',
+            'preferredquality': '128', # 192から128に下げて処理を高速化
         }],
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # ダウンロード実行
             info = ydl.extract_info(url, download=True)
-            # 変換後のパスは必ず .mp3 になる
             abs_path = os.path.join(save_dir, f"{file_id}.mp3")
-            # 日本語タイトルなどに対応したファイル名を作成
             display_name = f"{info.get('title', 'audio')}.mp3"
             
-            if not os.path.exists(abs_path):
-                 raise FileNotFoundError("MP3 conversion failed.")
-            
-            return FileResponse(
-                path=abs_path, 
-                filename=display_name, 
-                media_type='audio/mpeg'
-            )
+            if os.path.exists(abs_path):
+                return FileResponse(
+                    path=abs_path, 
+                    filename=display_name, 
+                    media_type='audio/mpeg'
+                )
+            else:
+                raise FileNotFoundError("MP3 file not found after conversion.")
+                
     except Exception as e:
-        print(f"Download Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # エラー内容を詳しくログに出す
+        error_msg = str(e)
+        print(f"Download Error: {error_msg}")
+        raise HTTPException(status_code=500, detail=error_msg)
