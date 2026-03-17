@@ -26,20 +26,16 @@ def download_audio(url: str):
     # ファイル保存名のテンプレート
     outtmpl = f"{save_dir}/{file_id}.%(ext)s"
 
-    ydl_opts = {
+ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': outtmpl,
-        'noplaylist': True,
-        'nocheckcertificate': True,
-        'geo_bypass': True,
-        'quiet': False,
         'cookiefile': 'cookies.txt', 
         'extractor_args': {
             'youtube': {
-                # 制限の緩いモバイル版を最優先
-                'player_client': ['mweb'],
-                # 余計なチャレンジを避ける
+                'player_client': ['ios', 'mweb'],
                 'skip': ['webpage', 'configs'],
+                # 先ほど取得した visitor_data を貼り付け
+                'visitor_data': 'CgtQNEVIUldXRVAtQSiXueTNBjIKCgJKUBIEGgAgC2LfAgrcAjE2LllUPUNGX1ZwRmlGbnhEMjI4VnN4VFFOVWlWX3RpeWVYSVJFM2tQaWdmSHhXdlVBYWFjaWlFRkVWV19zajkyZXI4a0p1bVphMlFRelo5ZmpTNjhCdkM2dlFSZTRHbUU0OENxZnZkeHVfVDkzX3UyOEhjc3ZhWktSNFBZd0pYaDhXQV92cDZQLVUyb0hTRUxGVW9EUjhGT3E4UlY1bXh6amlSMzU2X1g5RGZtbWZ1LTBzSnVQTHQzTkxLZVR4V3FTUVdiR3RMV3hNeXBOWVRvSlhXeDQ0WG5LdS1MNEhvRS1SWGY4RlhTQTRWVlJMaGlPaWJnS1l4dkhiWTl2TFg3eU5zSXM4czczdVp3X1Y2dzlqdEEyZUtEWl9BLTl3SXBnbHBGR18tZk5aQ2l4TUpjQVlyaVFINFp1TU50ck1WRFZVVFVXbnFrSk1icHFrdmZzYnVfQzIybmtWZw%3D%3D'
             }
         },
         'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
