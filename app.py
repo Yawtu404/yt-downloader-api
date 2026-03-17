@@ -34,18 +34,15 @@ def download_audio(url: str):
         'geo_bypass': True,
         'quiet': False,
         'cookiefile': 'cookies.txt', 
-        # --- 暗号化制限（n-sig）を回避するためのモバイル偽装設定 ---
         'extractor_args': {
             'youtube': {
-                # PC版(web)を避け、モバイルブラウザ(mweb)とiOSを優先
-                'player_client': ['mweb', 'ios'],
-                # 失敗の原因になりやすいweb版の読み込みをスキップ
+                # 制限の緩いモバイル版を最優先
+                'player_client': ['mweb'],
+                # 余計なチャレンジを避ける
                 'skip': ['webpage', 'configs'],
             }
         },
-        # ユーザーエージェントをiPhoneに固定して「人間」に見せかける
         'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        # ---------------------------------------
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
