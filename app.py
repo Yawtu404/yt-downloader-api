@@ -26,8 +26,9 @@ def download_video(url: str):
     file_id = str(uuid.uuid4())
     outtmpl = f"{save_dir}/{file_id}.%(ext)s"
 
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+ydl_opts = {
+        # 修正ポイント：より柔軟なフォーマット指定に変更
+        'format': 'best[ext=mp4]/best', 
         'outtmpl': outtmpl,
         'noplaylist': True,
         'nocheckcertificate': True,
