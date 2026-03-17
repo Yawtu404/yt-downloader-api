@@ -23,15 +23,15 @@ def read_root():
 def download_audio(url: str):
     save_dir = "/tmp"
     file_id = str(uuid.uuid4())
-    # ファイル保存名のテンプレート
     outtmpl = f"{save_dir}/{file_id}.%(ext)s"
 
-ydl_opts = {
+    ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': outtmpl,
         'noplaylist': True,
         'nocheckcertificate': True,
         'geo_bypass': True,
+        'quiet': False,
         'cookiefile': 'cookies.txt', 
         'extractor_args': {
             'youtube': {
@@ -49,26 +49,13 @@ ydl_opts = {
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # 動画情報の取得とダウンロード実行
             info = ydl.extract_info(url, download=True)
-            # 変換後のMP3ファイルパス
             abs_path = os.path.join(save_dir, f"{file_id}.mp3")
-            # ダウンロード時のファイル名（動画タイトル.mp3）
             display_name = f"{info.get('title', 'audio')}.mp3"
             
             if os.path.exists(abs_path):
-                return FileResponse(
-                    path=abs_path, 
-                    filename=display_name, 
-                    media_type='audio/mpeg'
-                )
+                return FileResponse(path=abs_path, filename=display_name, media_type='audio/mpeg')
             else:
                 raise FileNotFoundError("MP3 conversion failed.")
-                
     except Exception as e:
-        error_msg = str(e)
-        print(f"Download Error: {error_msg}")
-        # 429エラー（IPブロック）の場合に原因を分かりやすく表示
-        if "429" in error_msg:
-            error_msg = "YouTube blocked the server IP. Please wait or update cookies."
-        raise HTTPException(status_code=500, detail=error_msg)
+        raise HTTPException(status_code=500, detail=str(e))
