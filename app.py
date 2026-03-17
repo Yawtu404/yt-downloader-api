@@ -17,12 +17,13 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "High-Stability MP3 Downloader is ready!"}
+    return {"status": "ok", "message": "Stable MP3 Downloader is ready!"}
 
 @app.get("/download")
 def download_audio(url: str):
     save_dir = "/tmp"
     file_id = str(uuid.uuid4())
+    # ファイル保存名のテンプレート
     outtmpl = f"{save_dir}/{file_id}.%(ext)s"
 
     ydl_opts = {
@@ -32,16 +33,19 @@ def download_audio(url: str):
         'nocheckcertificate': True,
         'geo_bypass': True,
         'quiet': False,
-        'cookiefile': 'cookies.txt',
-        # --- ここからブロック回避のための重要設定 ---
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'cookiefile': 'cookies.txt', 
+        # --- 暗号化制限（n-sig）を回避するためのモバイル偽装設定 ---
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web'], # 複数のクライアントを試行
-                'skip': ['dash', 'hls']             # 重いストリーミング形式をスキップ
+                # PC版(web)を避け、モバイルブラウザ(mweb)とiOSを優先
+                'player_client': ['mweb', 'ios'],
+                # 失敗の原因になりやすいweb版の読み込みをスキップ
+                'skip': ['webpage', 'configs'],
             }
         },
-        # ------------------------------------------
+        # ユーザーエージェントをiPhoneに固定して「人間」に見せかける
+        'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        # ---------------------------------------
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -51,19 +55,26 @@ def download_audio(url: str):
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # 動画情報の取得とダウンロード実行
             info = ydl.extract_info(url, download=True)
+            # 変換後のMP3ファイルパス
             abs_path = os.path.join(save_dir, f"{file_id}.mp3")
+            # ダウンロード時のファイル名（動画タイトル.mp3）
             display_name = f"{info.get('title', 'audio')}.mp3"
             
-            return FileResponse(
-                path=abs_path, 
-                filename=display_name, 
-                media_type='audio/mpeg'
-            )
+            if os.path.exists(abs_path):
+                return FileResponse(
+                    path=abs_path, 
+                    filename=display_name, 
+                    media_type='audio/mpeg'
+                )
+            else:
+                raise FileNotFoundError("MP3 conversion failed.")
+                
     except Exception as e:
         error_msg = str(e)
         print(f"Download Error: {error_msg}")
-        # 429エラーが出た場合の分かりやすいメッセージ
+        # 429エラー（IPブロック）の場合に原因を分かりやすく表示
         if "429" in error_msg:
-            error_msg = "YouTube temporarily blocked this server (Error 429). Please try again in a few minutes."
+            error_msg = "YouTube blocked the server IP. Please wait or update cookies."
         raise HTTPException(status_code=500, detail=error_msg)
