@@ -1,4 +1,4 @@
-FROM python:3.11-slim  # 3.9 から 3.11 に変更
+FROM python:3.11-slim
 
 # Node.js と ffmpeg をインストール
 RUN apt-get update && apt-get install -y \
