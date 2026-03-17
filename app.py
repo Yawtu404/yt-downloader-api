@@ -17,7 +17,7 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "MP3 Downloader is ready!"}
+    return {"status": "ok", "message": "High-Stability MP3 Downloader is ready!"}
 
 @app.get("/download")
 def download_audio(url: str):
@@ -26,39 +26,44 @@ def download_audio(url: str):
     outtmpl = f"{save_dir}/{file_id}.%(ext)s"
 
     ydl_opts = {
-        # 修正：最初から m4a (軽量) を指定して変換負荷を下げる
-        'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        'format': 'bestaudio/best',
         'outtmpl': outtmpl,
         'noplaylist': True,
         'nocheckcertificate': True,
         'geo_bypass': True,
         'quiet': False,
         'cookiefile': 'cookies.txt',
+        # --- ここからブロック回避のための重要設定 ---
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'], # 複数のクライアントを試行
+                'skip': ['dash', 'hls']             # 重いストリーミング形式をスキップ
+            }
+        },
+        # ------------------------------------------
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '128', # 192から128に下げて処理を高速化
+            'preferredquality': '128',
         }],
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # ダウンロード実行
             info = ydl.extract_info(url, download=True)
             abs_path = os.path.join(save_dir, f"{file_id}.mp3")
             display_name = f"{info.get('title', 'audio')}.mp3"
             
-            if os.path.exists(abs_path):
-                return FileResponse(
-                    path=abs_path, 
-                    filename=display_name, 
-                    media_type='audio/mpeg'
-                )
-            else:
-                raise FileNotFoundError("MP3 file not found after conversion.")
-                
+            return FileResponse(
+                path=abs_path, 
+                filename=display_name, 
+                media_type='audio/mpeg'
+            )
     except Exception as e:
-        # エラー内容を詳しくログに出す
         error_msg = str(e)
         print(f"Download Error: {error_msg}")
+        # 429エラーが出た場合の分かりやすいメッセージ
+        if "429" in error_msg:
+            error_msg = "YouTube temporarily blocked this server (Error 429). Please try again in a few minutes."
         raise HTTPException(status_code=500, detail=error_msg)
